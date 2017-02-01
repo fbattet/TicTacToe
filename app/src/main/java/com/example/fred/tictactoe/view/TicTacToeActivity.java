@@ -1,7 +1,8 @@
-package com.example.fred.tictactoe.controller;
+package com.example.fred.tictactoe.view;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -12,29 +13,48 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.fred.tictactoe.R;
-import com.example.fred.tictactoe.model.Board;
-import com.example.fred.tictactoe.model.Player;
+import com.example.fred.tictactoe.presenter.TicTacToePresenter;
 
-public class TicTacToeActivity extends AppCompatActivity {
+/**
+ * Created by fred on 01/02/17.
+ */
 
-    private static String TAG = TicTacToeActivity.class.getName();
+public class TicTacToeActivity extends AppCompatActivity implements TicTacToeView {
 
-    private Board model;
+    private static final String TAG = TicTacToeActivity.class.getName();
 
-    /* View Components referenced by the controller */
     private ViewGroup buttonGrid;
     private View winnerPlayerViewGroup;
     private TextView winnerPlayerLabel;
 
+    TicTacToePresenter presenter = new TicTacToePresenter(this);
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tic_tac_toe);
         winnerPlayerLabel = (TextView) findViewById(R.id.winnerPlayerLabel);
         winnerPlayerViewGroup = findViewById(R.id.winnerPlayerViewGroup);
         buttonGrid = (ViewGroup) findViewById(R.id.buttoGrid);
+        presenter.onCreate();
+    }
 
-        model = new Board();
+    @Override
+    protected void onPause() {
+        super.onPause();
+        presenter.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        presenter.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        presenter.onDestroy();
     }
 
     @Override
@@ -46,41 +66,48 @@ public class TicTacToeActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
+        switch(item.getItemId()) {
             case R.id.action_reset:
-                reset();
+                presenter.onResetSelected();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-
     public void onCellClicked(View view) {
         Button button = (Button) view;
-
         String tag = button.getTag().toString();
         int row = Integer.valueOf(tag.substring(0, 1));
         int col = Integer.valueOf(tag.substring(1, 2));
-        Log.i(TAG, "Click Row [" + row + "," + col + "]");
+        Log.i(TAG, "Click Row: ["+ row + "," + col + "]");
+        presenter.onButtonSelected(row, col);
+    }
 
-        Player playerThatMoved = model.mark(row, col);
+    @Override
+    public void showWinner(String winningPlayerDisplayLabel) {
+        winnerPlayerLabel.setText(winningPlayerDisplayLabel);
+        winnerPlayerViewGroup.setVisibility(View.VISIBLE);
+    }
 
-        if (playerThatMoved != null) {
-            button.setText(playerThatMoved.toString());
-            if (model.getWinner() != null) {
-                winnerPlayerLabel.setText(playerThatMoved.toString());
-                winnerPlayerViewGroup.setVisibility(View.VISIBLE);
-            }
+    @Override
+    public void clearWinnerDisplay() {
+        winnerPlayerViewGroup.setVisibility(View.GONE);
+        winnerPlayerLabel.setText("");
+    }
+
+    @Override
+    public void clearButtons() {
+        for (int i = 0; i < buttonGrid.getChildCount(); i++) {
+            ((Button) buttonGrid.getChildAt(i)).setText("");
         }
     }
 
-    private void reset() {
-        winnerPlayerViewGroup.setVisibility(View.GONE);
-        winnerPlayerLabel.setText("");
-        model.restart();
-        for (int i = 0; i < buttonGrid.getChildCount(); i++) {
-            ((Button) buttonGrid.getChildAt(i)).setText("");
+    @Override
+    public void setButtonText(int row, int col, String label) {
+        Button btn = (Button) buttonGrid.findViewWithTag("" + row + col);
+        if (btn != null) {
+            btn.setText(label);
         }
     }
 }
